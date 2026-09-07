@@ -80,7 +80,7 @@ app.use(errorHandler);
 const LOCAL_MONGO = 'mongodb://127.0.0.1:27017/mahfilifts';
 
 const connectWithFallback = async () => {
-  const primary = process.env.MONGO_URI || LOCAL_MONGO;
+  const primary = process.env.MONGO_URI || process.env.MONGODB_URI || LOCAL_MONGO;
   try {
     await mongoose.connect(primary, { serverSelectionTimeoutMS: 8000 });
     console.log('MongoDB connected.');

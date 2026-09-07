@@ -16,7 +16,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const LOCAL_MONGO = 'mongodb://127.0.0.1:27017/mahfilifts';
-const PRIMARY_MONGO = process.env.MONGO_URI || LOCAL_MONGO;
+const PRIMARY_MONGO = process.env.MONGO_URI || process.env.MONGODB_URI || LOCAL_MONGO;
 
 const connect = async () => {
   try {
