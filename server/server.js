@@ -85,9 +85,8 @@ const connectWithFallback = async () => {
     await mongoose.connect(primary, { serverSelectionTimeoutMS: 8000 });
     console.log('MongoDB connected.');
   } catch (error) {
-    console.warn(`Primary database unreachable (${error.message}). Falling back to local MongoDB...`);
-    await mongoose.connect(LOCAL_MONGO, { serverSelectionTimeoutMS: 8000 });
-    console.log('MongoDB connected (local fallback).');
+    console.error('MongoDB connection error:', error.message);
+    process.exit(1);
   }
 };
 

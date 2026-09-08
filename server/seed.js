@@ -19,12 +19,7 @@ const LOCAL_MONGO = 'mongodb://127.0.0.1:27017/mahfilifts';
 const PRIMARY_MONGO = process.env.MONGO_URI || LOCAL_MONGO;
 
 const connect = async () => {
-  try {
-    await mongoose.connect(PRIMARY_MONGO, { serverSelectionTimeoutMS: 8000 });
-  } catch (error) {
-    console.warn(`Primary database unreachable (${error.message}). Using local MongoDB.`);
-    await mongoose.connect(LOCAL_MONGO, { serverSelectionTimeoutMS: 8000 });
-  }
+  await mongoose.connect(PRIMARY_MONGO, { serverSelectionTimeoutMS: 8000 });
 };
 
 const IMG = (id) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=900&q=80`;
