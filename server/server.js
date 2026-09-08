@@ -35,6 +35,16 @@ const PORT = process.env.PORT || 5000;
 
 app.use(helmet({
   crossOriginResourcePolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://res.cloudinary.com"],
+      connectSrc: ["'self'", "https://mahfil-gifts.onrender.com", "https://images.unsplash.com", "https://res.cloudinary.com"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+      fontSrc: ["'self'", "https:", "data:"],
+    },
+  },
 }));
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
