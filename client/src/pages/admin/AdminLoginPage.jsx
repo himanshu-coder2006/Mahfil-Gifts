@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (getAdminSession()) {
-      navigate('/admin', { replace: true });
+      navigate('/admin/dashboard', { replace: true });
     }
   }, [navigate]);
 
@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
 
       setAdminToken(response?.data?.token || response?.token || '');
       setAdminSession(admin);
-      navigate('/admin', { replace: true });
+      navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       setError(err?.message || 'Invalid admin credentials.');
     } finally {

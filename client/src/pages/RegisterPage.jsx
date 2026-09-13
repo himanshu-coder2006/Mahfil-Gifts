@@ -37,7 +37,7 @@ const submit = async (e) => {
     const result = await dispatch(registerUser({ ...form, confirmPassword: undefined }));
     if (result.meta.requestStatus === 'fulfilled') {
       dispatch(showNotification({ message: 'Account created! Welcome to Mahfil Gifts 🎉' }));
-      navigate('/account');
+      navigate('/');
     }
   };
 

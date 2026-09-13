@@ -21,7 +21,7 @@ export default function LoginPage() {
     const result = await dispatch(loginUser({ email: email.trim(), password }));
     if (result.meta.requestStatus === 'fulfilled') {
       dispatch(showNotification({ message: 'Welcome back! You are logged in.' }));
-      navigate('/account');
+      navigate('/');
     }
   };
 
@@ -30,7 +30,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="card p-8">
           <div className="text-center">
-            <p className="font-display text-3xl font-bold text-primary">Gifted<span className="text-accent">Threads</span></p>
+            <p className="font-display text-3xl font-bold text-primary">Mahfil<span className="text-accent">Gifts</span></p>
             <p className="mt-1 text-sm text-muted">Login to continue shopping</p>
           </div>
 
@@ -54,12 +54,11 @@ export default function LoginPage() {
             Don't have an account?{' '}
             <Link to="/register" className="font-semibold text-accent hover:underline">Register</Link>
           </p>
+          <p className="mt-3 text-center text-sm text-muted">
+            <Link to="/forgot-password" className="font-semibold text-accent hover:underline">Forgot Password?</Link>
+          </p>
         </div>
 
-        <div className="mt-4 rounded-xl bg-primary p-4 text-center text-xs text-white/70">
-          <p>Demo customer: <span className="font-mono">customer@mahfilgifts.com / Customer@123</span></p>
-          <p className="mt-1">Admin: <span className="font-mono">admin@mahfilgifts.com / Admin@123</span></p>
-        </div>
       </div>
     </div>
   );
