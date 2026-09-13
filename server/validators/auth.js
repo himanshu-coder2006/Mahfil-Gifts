@@ -13,14 +13,10 @@ const handleValidation = (req, res, next) => {
 };
 
 export const registerValidator = [
-  body('name').trim().notEmpty().withMessage('Name is required.'),
+  body('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters.'),
   body('email').trim().isEmail().withMessage('Enter a valid email address.'),
-  body('mobile').trim().matches(/^[6-9]\d{9}$/).withMessage('Enter a valid 10-digit mobile number.'),
+  body('mobile').trim().matches(/^\d{10}$/).withMessage('Enter a valid 10-digit mobile number.'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters.'),
-  body('confirmPassword').custom((val, { req }) => {
-    if (val !== req.body.password) throw new Error('Passwords do not match.');
-    return true;
-  }),
   handleValidation,
 ];
 
