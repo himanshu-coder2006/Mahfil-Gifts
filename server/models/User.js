@@ -17,7 +17,6 @@ const userSchema = new mongoose.Schema({
   notifications: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Notification' }],
 }, { timestamps: true });
 
-userSchema.index({ email: 1 });
 userSchema.index({ mobile: 1 });
 
 export default mongoose.model('User', userSchema);

@@ -1,45 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { getSettings, saveSettings, DEFAULT_SETTINGS } from '../../utils/storage';
+import { adminAPI } from '../../services/api';
 import { showNotification } from '../../store/slices/notificationSlice';
 import Button from '../../components/ui/Button';
 
+const BLANK = {
+  websiteName: '',
+  email: '',
+  phone: '',
+  address: '',
+  freeShippingThreshold: 1999,
+  shippingCharge: 99,
+  codCharge: 40,
+  buy2Discount: 5,
+  buy3Discount: 10,
+};
+
 export default function AdminSettingsPage() {
   const dispatch = useDispatch();
-  const [form, setForm] = useState(getSettings());
+  const [form, setForm] = useState(BLANK);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    adminAPI
+      .getSettings()
+      .then((res) => setForm((prev) => ({ ...prev, ...(res.data || {}) })))
+      .catch(() => setForm(BLANK))
+      .finally(() => setLoading(false));
+  }, []);
 
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
-  const save = (e) => {
+  const save = async (e) => {
     e.preventDefault();
-    saveSettings({
-      ...DEFAULT_SETTINGS,
-      ...form,
-      announcements: Array.isArray(form.announcements) ? form.announcements.filter((a) => a.trim()) : [],
-      freeShippingThreshold: Number(form.freeShippingThreshold) || 999,
-      deliveryCharge: Number(form.deliveryCharge) || 99,
-      codCharge: Number(form.codCharge) || 40,
-      buy2Discount: Number(form.buy2Discount) || 5,
-      buy3Discount: Number(form.buy3Discount) || 10,
-    });
-    setSaved(true);
-    dispatch(showNotification({ message: 'Store settings saved.' }));
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await adminAPI.saveSettings({
+        websiteName: form.websiteName,
+        email: form.email,
+        phone: form.phone,
+        address: form.address,
+        freeShippingThreshold: Number(form.freeShippingThreshold) || 1999,
+        shippingCharge: Number(form.shippingCharge) || 99,
+        codCharge: Number(form.codCharge) || 40,
+        buy2Discount: Number(form.buy2Discount) || 5,
+        buy3Discount: Number(form.buy3Discount) || 10,
+      });
+      setSaved(true);
+      dispatch(showNotification({ message: 'Store settings saved.' }));
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      dispatch(showNotification({ message: err?.message || 'Could not save settings.', type: 'error' }));
+    }
   };
 
-  const setAnn = (i, v) => {
-    const arr = [...form.announcements];
-    arr[i] = v;
-    set('announcements', arr);
-  };
+  if (loading) {
+    return <div className="py-20 text-center text-muted">Loading settings…</div>;
+  }
 
   return (
     <form onSubmit={save}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-primary">Store Settings</h1>
-          <p className="mt-1 text-sm text-muted">Manage store info, announcements, delivery and discounts.</p>
+          <p className="mt-1 text-sm text-muted">Manage store info, delivery and discounts.</p>
         </div>
         <Button variant="accent" type="submit">{saved ? 'Saved ✓' : 'Save Settings'}</Button>
       </div>
@@ -50,39 +74,22 @@ export default function AdminSettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="field-label">Store Name</label>
-              <input className="field" value={form.storeName} onChange={(e) => set('storeName', e.target.value)} />
+              <input className="field" value={form.websiteName} onChange={(e) => set('websiteName', e.target.value)} />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="field-label">Contact Email</label>
-                <input className="field" type="email" value={form.storeEmail} onChange={(e) => set('storeEmail', e.target.value)} />
+                <input className="field" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
               </div>
               <div>
                 <label className="field-label">Contact Phone</label>
-                <input className="field" value={form.storePhone} onChange={(e) => set('storePhone', e.target.value)} />
+                <input className="field" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
               </div>
             </div>
             <div>
               <label className="field-label">Store Address</label>
-              <textarea className="field" rows={2} value={form.storeAddress} onChange={(e) => set('storeAddress', e.target.value)} />
+              <textarea className="field" rows={2} value={form.address} onChange={(e) => set('address', e.target.value)} />
             </div>
-            <div>
-              <label className="field-label">WhatsApp Number (with country code)</label>
-              <input className="field" value={form.whatsappNumber} onChange={(e) => set('whatsappNumber', e.target.value)} placeholder="919999000000" />
-            </div>
-          </div>
-        </Section>
-
-        {/* Announcements */}
-        <Section title="Announcement Bar Messages" icon="📢">
-          <p className="mb-4 text-xs text-muted">These rotate in the top announcement bar every 3 seconds.</p>
-          <div className="space-y-3">
-            {form.announcements.map((a, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-light text-xs font-bold text-primary">{i + 1}</span>
-                <input className="field" value={a} onChange={(e) => setAnn(i, e.target.value)} />
-              </div>
-            ))}
           </div>
         </Section>
 
@@ -95,7 +102,7 @@ export default function AdminSettingsPage() {
             </div>
             <div>
               <label className="field-label">Standard Delivery (₹)</label>
-              <input className="field" type="number" value={form.deliveryCharge} onChange={(e) => set('deliveryCharge', e.target.value)} />
+              <input className="field" type="number" value={form.shippingCharge} onChange={(e) => set('shippingCharge', e.target.value)} />
             </div>
             <div>
               <label className="field-label">COD Charge (₹)</label>

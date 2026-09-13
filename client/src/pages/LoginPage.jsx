@@ -3,13 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../store/slices/authSlice';
 import { showNotification } from '../store/slices/notificationSlice';
-import { setAdminSession } from '../utils/storage';
 import Button from '../components/ui/Button';
-
-const ADMIN_ACCOUNTS = [
-  { email: 'admin@giftedthreads.com', password: 'admin123' },
-  { email: 'admin@mahfilifts.com', password: 'Admin@123' },
-];
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -22,19 +16,12 @@ export default function LoginPage() {
 
   const submit = async (e) => {
     e.preventDefault();
-    const adminMatch = ADMIN_ACCOUNTS.find((a) => a.email === email.trim() && a.password === password);
-    if (adminMatch) {
-      setAdminSession({ name: 'GiftedThreads Admin', email: adminMatch.email });
-      dispatch(showNotification({ message: 'Welcome back, Admin!' }));
-      navigate('/admin');
-      return;
-    }
-    if (email.trim() && password) {
-      const result = await dispatch(loginUser({ email: email.trim(), password }));
-      if (result.meta.requestStatus === 'fulfilled') {
-        dispatch(showNotification({ message: 'Welcome back! You are logged in.' }));
-        navigate('/account');
-      }
+    if (!email.trim() || !password) return;
+
+    const result = await dispatch(loginUser({ email: email.trim(), password }));
+    if (result.meta.requestStatus === 'fulfilled') {
+      dispatch(showNotification({ message: 'Welcome back! You are logged in.' }));
+      navigate('/account');
     }
   };
 
@@ -70,8 +57,8 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-4 rounded-xl bg-primary p-4 text-center text-xs text-white/70">
-          <p>Demo customer: <span className="font-mono">customer@mahfilifts.com / Customer@123</span></p>
-          <p className="mt-1">Admin: <span className="font-mono">admin@mahfilifts.com / Admin@123</span></p>
+          <p>Demo customer: <span className="font-mono">customer@mahfilgifts.com / Customer@123</span></p>
+          <p className="mt-1">Admin: <span className="font-mono">admin@mahfilgifts.com / Admin@123</span></p>
         </div>
       </div>
     </div>

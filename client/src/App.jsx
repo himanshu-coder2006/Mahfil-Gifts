@@ -1,9 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCart } from './store/slices/cartSlice';
 import { fetchWishlist } from './store/slices/wishlistSlice';
-import AnnouncementBar from './components/layout/AnnouncementBar';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import ToastStack from './components/ui/ToastStack';
@@ -11,7 +10,9 @@ import WhatsAppFloat from './components/ui/WhatsAppFloat';
 import BackToTop from './components/ui/BackToTop';
 import CookieConsent from './components/ui/CookieConsent';
 import ProtectedRoute from './components/ProtectedRoute';
-import { getAdminSession } from './utils/storage';
+import { getAdminSession, clearAdminSession, clearAdminToken } from './utils/storage';
+import { adminAPI } from './services/api';
+import { Outlet } from 'react-router-dom';
 
 import HomePage from './pages/HomePage';
 import ShopPage from './pages/ShopPage';
@@ -33,8 +34,25 @@ import AdminCustomersPage from './pages/admin/AdminCustomersPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 
 function AdminRoute() {
-  if (!getAdminSession()) return <Navigate to="/admin/login" replace />;
-  return null;
+  const [status, setStatus] = useState('loading');
+
+  useEffect(() => {
+    if (!getAdminSession()) {
+      setStatus('denied');
+      return;
+    }
+    adminAPI.me()
+      .then(() => setStatus('granted'))
+      .catch(() => {
+        clearAdminSession();
+        clearAdminToken();
+        setStatus('denied');
+      });
+  }, []);
+
+  if (status === 'loading') return <div className="flex min-h-screen items-center justify-center bg-light"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  if (status === 'denied') return <Navigate to="/admin/login" replace />;
+  return <Outlet />;
 }
 
 function App() {
@@ -55,7 +73,6 @@ function App() {
       <ToastStack />
       {!isAdminRoute && (
         <>
-          <AnnouncementBar />
           <Header />
         </>
       )}

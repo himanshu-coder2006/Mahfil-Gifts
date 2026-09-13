@@ -26,8 +26,8 @@ export const STORE_KEYS = {
 };
 
 export const DEFAULT_SETTINGS = {
-  storeName: 'GiftedThreads',
-  storeEmail: 'hello@giftedthreads.com',
+  storeName: 'MahfilGifts',
+  storeEmail: 'hello@mahfilgifts.com',
   storePhone: '+91 99990 00000',
   storeAddress: 'B-42, Andheri East, Mumbai, Maharashtra 400069',
   announcements: [
@@ -74,6 +74,44 @@ export const getAdminSession = () => read(STORE_KEYS.admin, null);
 export const setAdminSession = (admin) => write(STORE_KEYS.admin, admin);
 export const clearAdminSession = () => localStorage.removeItem(STORE_KEYS.admin);
 
+const TOKEN_KEYS = { user: 'gt_user_token', admin: 'gt_admin_token' };
+
+export const getUserToken = () => {
+  try {
+    return localStorage.getItem(TOKEN_KEYS.user) || '';
+  } catch {
+    return '';
+  }
+};
+export const setUserToken = (token) => {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEYS.user, token);
+  } catch { /* storage unavailable */ }
+};
+export const clearUserToken = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEYS.user);
+  } catch { /* storage unavailable */ }
+};
+
+export const getAdminToken = () => {
+  try {
+    return localStorage.getItem(TOKEN_KEYS.admin) || '';
+  } catch {
+    return '';
+  }
+};
+export const setAdminToken = (token) => {
+  try {
+    if (token) localStorage.setItem(TOKEN_KEYS.admin, token);
+  } catch { /* storage unavailable */ }
+};
+export const clearAdminToken = () => {
+  try {
+    localStorage.removeItem(TOKEN_KEYS.admin);
+  } catch { /* storage unavailable */ }
+};
+
 export const hasConsentedCookie = () => localStorage.getItem(STORE_KEYS.cookie) === 'accepted';
 export const acceptCookie = () => localStorage.setItem(STORE_KEYS.cookie, 'accepted');
 
@@ -81,62 +119,6 @@ export const getCheckoutDraft = () => read(STORE_KEYS.checkoutDraft, null);
 export const setCheckoutDraft = (draft) => write(STORE_KEYS.checkoutDraft, draft);
 export const clearCheckoutDraft = () => localStorage.removeItem(STORE_KEYS.checkoutDraft);
 
-export const SEED_CUSTOMERS = [
-  { name: 'Ananya Sharma', email: 'ananya@example.com', phone: '9812345670', joined: '2025-01-12', orders: 4, spent: 5896 },
-  { name: 'Rohit Verma', email: 'rohit@example.com', phone: '9823456781', joined: '2025-02-03', orders: 2, spent: 2598 },
-  { name: 'Priya Patel', email: 'priya@example.com', phone: '9834567892', joined: '2025-02-21', orders: 3, spent: 4297 },
-  { name: 'Kunal Mehta', email: 'kunal@example.com', phone: '9845678903', joined: '2025-03-15', orders: 1, spent: 899 },
-  { name: 'Sneha Iyer', email: 'sneha@example.com', phone: '9856789014', joined: '2025-04-09', orders: 5, spent: 7120 },
-  { name: 'Aarav Gupta', email: 'aarav@example.com', phone: '9867890125', joined: '2025-05-18', orders: 2, spent: 3144 },
-];
+export const SEED_CUSTOMERS = [];
 
-export const SEED_ORDERS = [
-  {
-    orderId: 'GFT1725000123',
-    date: '2026-08-28T10:12:00.000Z',
-    customer: { name: 'Ananya Sharma', email: 'ananya@example.com', phone: '9812345670' },
-    items: [
-      { name: 'Customized Floral Printed Black & White Handheld Box Bag', quantity: 1, price: 1299 },
-      { name: 'Personalised Photo Ceramic Mug', quantity: 2, price: 399 },
-    ],
-    subtotal: 2097,
-    discount: 210,
-    delivery: 0,
-    total: 1887,
-    paymentMethod: 'UPI',
-    status: 'Shipped',
-    address: { city: 'Mumbai', state: 'Maharashtra', pincode: '400069' },
-  },
-  {
-    orderId: 'GFT1725000124',
-    date: '2026-08-30T15:40:00.000Z',
-    customer: { name: 'Rohit Verma', email: 'rohit@example.com', phone: '9823456781' },
-    items: [
-      { name: 'Personalised Coffee Mug With Name', quantity: 1, price: 449 },
-      { name: 'Personalised Wooden Keychain', quantity: 1, price: 299 },
-    ],
-    subtotal: 748,
-    discount: 0,
-    delivery: 99,
-    total: 847,
-    paymentMethod: 'Cash on Delivery',
-    status: 'Processing',
-    address: { city: 'Delhi', state: 'Delhi', pincode: '110001' },
-  },
-  {
-    orderId: 'GFT1725000125',
-    date: '2026-09-01T09:05:00.000Z',
-    customer: { name: 'Priya Patel', email: 'priya@example.com', phone: '9834567892' },
-    items: [
-      { name: 'Personalised Name Engraved Leather Wallet', quantity: 1, price: 799 },
-      { name: 'Customised Name Necklace', quantity: 1, price: 799 },
-    ],
-    subtotal: 1598,
-    discount: 80,
-    delivery: 0,
-    total: 1518,
-    paymentMethod: 'Credit/Debit Card',
-    status: 'Delivered',
-    address: { city: 'Ahmedabad', state: 'Gujarat', pincode: '380015' },
-  },
-];
+export const SEED_ORDERS = [];

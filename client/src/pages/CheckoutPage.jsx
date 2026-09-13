@@ -2,12 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChevronLeft, ShieldCheck, Loader2 } from 'lucide-react';
-import { orderAPI } from '../services/api';
+import { orderAPI, paymentAPI } from '../services/api';
 import { clearCart } from '../store/slices/cartSlice';
 import { showNotification } from '../store/slices/notificationSlice';
 import { formatINR } from '../utils/format';
 import { computeCartTotals, SHIPPING_STATES } from '../utils/order';
-import { getSettings, saveOrder, upsertCustomer } from '../utils/storage';
 import Button from '../components/ui/Button';
 
 const PAY_METHODS = [
@@ -17,14 +16,25 @@ const PAY_METHODS = [
   { id: 'COD', title: 'Cash on Delivery', desc: 'Pay at your doorstep', icon: '💵' },
 ];
 
-const BANKS = ['SBI', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Kotak Mahindra Bank', 'Punjab National Bank'];
+const loadRazorpay = () =>
+  new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(window.Razorpay);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(window.Razorpay);
+    script.onerror = () => reject(new Error('Could not load the payment gateway.'));
+    document.body.appendChild(script);
+  });
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const items = useSelector((s) => s.cart.items);
+  const cartTotals = useSelector((s) => s.cart.totals);
   const user = useSelector((s) => s.auth.user);
-  const settings = getSettings();
 
   const [step, setStep] = useState(1);
   const [placing, setPlacing] = useState(false);
@@ -44,12 +54,13 @@ export default function CheckoutPage() {
 
   const [payMethod, setPayMethod] = useState('UPI');
   const [upiId, setUpiId] = useState('user@upi');
-  const [card, setCard] = useState({ number: '', expiry: '', cvv: '' });
-  const [bank, setBank] = useState(BANKS[0]);
 
-  const totals = useMemo(() => computeCartTotals(items), [items]);
-  const codFee = payMethod === 'COD' ? settings.codCharge : 0;
-  const finalTotal = totals.total + codFee;
+  const totals = useMemo(
+    () => cartTotals || computeCartTotals(items),
+    [cartTotals, items]
+  );
+  const codFee = payMethod === 'COD' ? Number(totals.codFee) || 0 : 0;
+  const finalTotal = Number(totals.total || 0) + codFee;
 
   if (items.length === 0) {
     return (
@@ -85,75 +96,90 @@ export default function CheckoutPage() {
       dispatch(showNotification({ message: 'Enter a valid UPI ID (e.g. name@upi).', type: 'error' }));
       return false;
     }
-    if (payMethod === 'Card') {
-      const digits = card.number.replace(/\s/g, '');
-      if (digits.length < 12) {
-        dispatch(showNotification({ message: 'Enter a valid card number.', type: 'error' }));
-        return false;
-      }
-      if (!/^\d{2}\/\d{2}$/.test(card.expiry)) {
-        dispatch(showNotification({ message: 'Expiry must be MM/YY.', type: 'error' }));
-        return false;
-      }
-      if (!/^\d{3,4}$/.test(card.cvv)) {
-        dispatch(showNotification({ message: 'Enter a valid CVV.', type: 'error' }));
-        return false;
-      }
-    }
     return true;
+  };
+
+  const handleRazorpayPayment = async (order) => {
+    const res = await paymentAPI.createOrder({
+      orderId: order._id,
+      amount: Number(order.totalAmount),
+      currency: 'INR',
+    });
+    const razorpayOrder = res.data;
+
+    const Razorpay = await loadRazorpay();
+
+    return new Promise((resolve, reject) => {
+      const rzp = new Razorpay({
+        key: razorpayOrder.keyId,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: 'Mahfil Gifts',
+        description: `Order ${order._id}`,
+        order_id: razorpayOrder.id,
+        prefill: {
+          name: form.fullName,
+          email: form.email,
+          contact: form.phone,
+        },
+        handler: async (payment) => {
+          try {
+            await paymentAPI.verify({
+              orderId: razorpayOrder.id,
+              paymentId: payment.razorpay_payment_id,
+              signature: payment.razorpay_signature,
+            });
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        },
+        modal: {
+          ondismiss: () => reject(new Error('Payment cancelled.')),
+        },
+      });
+
+      rzp.on('payment.failed', (resp) => {
+        reject(new Error(resp.error?.description || 'Payment failed.'));
+      });
+
+      rzp.open();
+    });
   };
 
   const placeOrder = async () => {
     setPlacing(true);
     try {
-      const paymentMethodLabel =
-        payMethod === 'COD' ? 'Cash on Delivery' : payMethod === 'Card' ? 'Credit/Debit Card' : payMethod === 'NetBanking' ? `Net Banking (${bank})` : 'UPI';
-
-      let serverOrder = null;
-      try {
-        const res = await orderAPI.create({
-          shippingAddress: {
-            fullName: form.fullName, phone: form.phone, email: form.email,
-            addressLine1: form.addressLine1, addressLine2: form.addressLine2,
-            city: form.city, state: form.state, pincode: form.pincode,
-          },
-          paymentMethod: payMethod === 'COD' ? 'cod' : 'razorpay',
-        });
-        serverOrder = res.data;
-      } catch (err) {
-        // Backend unreachable — still complete the order locally (simulated checkout).
-        dispatch(showNotification({ message: 'Seamless fallback: order saved locally.', type: 'success' }));
-      }
-
-      const mirror = {
-        orderId: serverOrder?._id || 'GFT' + Date.now(),
-        date: new Date().toISOString(),
-        customer: { name: form.fullName, email: form.email, phone: form.phone },
-        items: items.map((i) => ({ name: i.product?.name, quantity: i.quantity, price: Number(i.product?.price || 0), personalised: i.variant?.personalisation || '' })),
-        address: { addressLine1: form.addressLine1, addressLine2: form.addressLine2, city: form.city, state: form.state, pincode: form.pincode },
-        paymentMethod: paymentMethodLabel,
-        subtotal: totals.subtotal,
-        discount: totals.discount,
-        delivery: totals.delivery,
-        codFee,
-        total: finalTotal,
-        status: 'Processing',
-      };
-      saveOrder(mirror);
-      upsertCustomer({
-        name: form.fullName, email: form.email, phone: form.phone,
-        joined: new Date().toISOString().slice(0, 10), orders: 1, spent: finalTotal,
+      const res = await orderAPI.create({
+        shippingAddress: {
+          fullName: form.fullName, phone: form.phone, email: form.email,
+          addressLine1: form.addressLine1, addressLine2: form.addressLine2,
+          city: form.city, state: form.state, pincode: form.pincode,
+        },
+        paymentMethod: payMethod === 'COD' ? 'cod' : 'razorpay',
       });
+      const order = res.data;
 
-      if (form.saveAddress) {
-        const key = `gt_addresses`;
-        const existing = JSON.parse(localStorage.getItem(key) || '[]');
-        existing.push({ ...form, saveAddress: undefined, email: user?.email || form.email });
-        localStorage.setItem(key, JSON.stringify(existing));
+      if (payMethod === 'COD') {
+        dispatch(clearCart());
+        navigate(`/order-success/${order._id}`);
+        return;
       }
 
-      dispatch(clearCart());
-      navigate(`/order-success/${mirror.orderId}`);
+      try {
+        await handleRazorpayPayment(order);
+        dispatch(clearCart());
+        navigate(`/order-success/${order._id}`);
+      } catch (err) {
+        dispatch(showNotification({ message: err?.message || 'Payment could not be completed.', type: 'error' }));
+      }
+    } catch (err) {
+      let message = err?.message || 'Unable to place the order. Please try again.';
+      dispatch(showNotification({ message, type: 'error' }));
+      if ((err?.message || '').toLowerCase().includes('not configured')) {
+        setPayMethod('COD');
+        setStep(2);
+      }
     } finally {
       setPlacing(false);
     }
@@ -251,7 +277,7 @@ export default function CheckoutPage() {
             {step === 2 && (
               <div className="card p-6">
                 <h2 className="font-display text-xl font-bold text-primary">Payment Method</h2>
-                <p className="mt-1 text-xs text-muted">🔒 This is a demo checkout — no real payment is processed.</p>
+                <p className="mt-1 text-xs text-muted">🔒 Secure checkout via Razorpay for online payments.</p>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {PAY_METHODS.map((m) => (
@@ -266,7 +292,7 @@ export default function CheckoutPage() {
                       </div>
                       <p className="mt-2 text-sm font-semibold text-primary">{m.title}</p>
                       <p className="text-xs text-muted">{m.desc}</p>
-                      {m.id === 'COD' && <p className="mt-1 text-[11px] font-medium text-accent">+ {formatINR(settings.codCharge)} COD charge</p>}
+                      {m.id === 'COD' && <p className="mt-1 text-[11px] font-medium text-accent">+ ₹{Number(totals.codFee) || 0} COD charge</p>}
                     </button>
                   ))}
                 </div>
@@ -275,46 +301,6 @@ export default function CheckoutPage() {
                   <div className="mt-5 rounded-xl bg-light p-4">
                     <label className="field-label">UPI ID</label>
                     <input className="field" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="yourname@upi" />
-                  </div>
-                )}
-                {payMethod === 'Card' && (
-                  <div className="mt-5 grid gap-4 rounded-xl bg-light p-4 sm:grid-cols-3">
-                    <div className="sm:col-span-3">
-                      <label className="field-label">Card Number</label>
-                      <input
-                        className="field"
-                        value={card.number}
-                        onChange={(e) => setCard((c) => ({ ...c, number: e.target.value.replace(/[^\d]/g, '').slice(0, 16) }))}
-                        placeholder="1234 5678 9012 3456"
-                      />
-                    </div>
-                    <div>
-                      <label className="field-label">Expiry (MM/YY)</label>
-                      <input
-                        className="field"
-                        value={card.expiry}
-                        onChange={(e) => setCard((c) => ({ ...c, expiry: e.target.value.replace(/[^\d/]/g, '').slice(0, 5) }))}
-                        placeholder="12/29"
-                      />
-                    </div>
-                    <div>
-                      <label className="field-label">CVV</label>
-                      <input
-                        className="field"
-                        type="password"
-                        value={card.cvv}
-                        onChange={(e) => setCard((c) => ({ ...c, cvv: e.target.value.replace(/[^\d]/g, '').slice(0, 4) }))}
-                        placeholder="•••"
-                      />
-                    </div>
-                  </div>
-                )}
-                {payMethod === 'NetBanking' && (
-                  <div className="mt-5 rounded-xl bg-light p-4">
-                    <label className="field-label">Select Bank</label>
-                    <select className="field" value={bank} onChange={(e) => setBank(e.target.value)}>
-                      {BANKS.map((b) => <option key={b}>{b}</option>)}
-                    </select>
                   </div>
                 )}
 
@@ -350,8 +336,8 @@ export default function CheckoutPage() {
                   </div>
                   <p className="mt-2 text-sm text-ink/80">
                     {PAY_METHODS.find((m) => m.id === payMethod)?.title}
-                    {payMethod === 'UPI' ? ` (${upiId})` : payMethod === 'NetBanking' ? ` (${bank})` : ''}
-                    {codFee > 0 && <span className="text-accent"> · + {formatINR(codFee)} COD fee</span>}
+                    {payMethod === 'UPI' ? ` (${upiId})` : ''}
+                    {codFee > 0 && <span className="text-accent"> · + ₹{codFee} COD fee</span>}
                   </p>
                 </div>
 
@@ -361,7 +347,7 @@ export default function CheckoutPage() {
                       <img src={item.product?.thumbnail || item.product?.images?.[0]} alt="" className="h-14 w-14 rounded-lg object-cover" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-primary">{item.product?.name}</p>
-                        <p className="text-xs text-muted">Qty {item.quantity}{item.variant?.personalisation ? ` · “${item.variant.personalisation}”` : ''}</p>
+                        <p className="text-xs text-muted">Qty {item.quantity}{item.variant?.personalisation ? ` · "${item.variant.personalisation}"` : ''}</p>
                       </div>
                       <p className="text-sm font-semibold">{formatINR(item.product?.price * item.quantity)}</p>
                     </div>
@@ -370,8 +356,8 @@ export default function CheckoutPage() {
 
                 <div className="mt-6 border-t border-line pt-4">
                   <Row label="Subtotal" value={formatINR(totals.subtotal)} />
-                  {totals.discount > 0 && <GreenRow label={totals.discountLabel} value={`− ${formatINR(totals.discount)}`} />}
-                  <Row label="Delivery" value={totals.delivery === 0 ? 'FREE' : formatINR(totals.delivery)} />
+                  {totals.discount > 0 && <GreenRow label="Discount" value={`− ${formatINR(totals.discount)}`} />}
+                  <Row label="Delivery" value={Number(totals.shipping) === 0 ? 'FREE' : formatINR(totals.shipping)} />
                   {codFee > 0 && <Row label="COD charge" value={formatINR(codFee)} />}
                   <div className="mt-3 flex justify-between border-t border-line pt-3 text-lg font-bold text-primary">
                     <span>Total Payable</span><span>{formatINR(finalTotal)}</span>
@@ -382,7 +368,7 @@ export default function CheckoutPage() {
                   {placing ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Placing order…</span> : 'Place Order · Pay ' + formatINR(finalTotal)}
                 </Button>
                 <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted">
-                  <ShieldCheck className="h-4 w-4 text-emerald-600" /> This is a simulated payment — no money is deducted.
+                  <ShieldCheck className="h-4 w-4 text-emerald-600" /> Online payments are processed securely via Razorpay.
                 </p>
               </div>
             )}
@@ -428,6 +414,6 @@ const Row = ({ label, value }) => (
 const GreenRow = ({ label, value }) => (
   <div className="flex justify-between py-1 text-sm text-emerald-600">
     <span>{label}</span>
-    <span className="font-semibold">− {value}</span>
+    <span className="font-semibold">{value}</span>
   </div>
 );

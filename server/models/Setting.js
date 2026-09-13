@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const settingSchema = new mongoose.Schema({
-  websiteName: { type: String, default: 'Mahfilifts' },
+  websiteName: { type: String, default: 'MahfilGifts' },
   logo: { type: String, default: '' },
   favicon: { type: String, default: '' },
   email: { type: String, default: '' },
@@ -12,6 +12,9 @@ const settingSchema = new mongoose.Schema({
   codEnabled: { type: Boolean, default: true },
   shippingCharge: { type: Number, default: 99 },
   freeShippingThreshold: { type: Number, default: 1999 },
+  codCharge: { type: Number, default: 40 },
+  buy2Discount: { type: Number, default: 5 },
+  buy3Discount: { type: Number, default: 10 },
   smtpHost: { type: String, default: '' },
   smtpPort: { type: Number, default: 587 },
   smtpUser: { type: String, default: '' },

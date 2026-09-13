@@ -1,10 +1,19 @@
 import axios from 'axios';
+import { getUserToken, getAdminToken } from '../utils/storage';
 
 const baseURL = import.meta.env.VITE_API_URL || '';
 const api = axios.create({
   baseURL: `${baseURL}/api`,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use((config) => {
+  const token = getUserToken() || getAdminToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 api.interceptors.response.use(
@@ -97,7 +106,18 @@ export const addressAPI = {
 
 export const adminAPI = {
   login: (data) => api.post('/admin/login', data),
+  logout: () => api.post('/admin/logout'),
+  me: () => api.get('/admin/me'),
   getDashboard: () => api.get('/admin/dashboard'),
+  getOrders: (params) => api.get('/admin/orders', { params }),
+  updateOrderStatus: (id, status) => api.put(`/admin/orders/${id}/status`, { status }),
+  getCustomers: () => api.get('/admin/customers'),
+  getSettings: () => api.get('/admin/settings'),
+  saveSettings: (data) => api.put('/admin/settings', data),
+  getProducts: () => api.get('/admin/products'),
+  createProduct: (data) => api.post('/admin/products', data),
+  updateProduct: (id, data) => api.put(`/admin/products/${id}`, data),
+  deleteProduct: (id) => api.delete(`/admin/products/${id}`),
 };
 
 export default api;

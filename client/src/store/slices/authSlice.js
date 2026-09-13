@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { authAPI } from '../../services/api';
+import { setUserToken, clearUserToken } from '../../utils/storage';
 
 export const fetchMe = createAsyncThunk('auth/fetchMe', async (_, { rejectWithValue }) => {
   try {
@@ -13,6 +14,7 @@ export const fetchMe = createAsyncThunk('auth/fetchMe', async (_, { rejectWithVa
 export const loginUser = createAsyncThunk('auth/login', async (data, { rejectWithValue }) => {
   try {
     const res = await authAPI.login(data);
+    setUserToken(res.data?.token);
     return res.data.user;
   } catch (err) {
     return rejectWithValue(err.message);
@@ -22,6 +24,7 @@ export const loginUser = createAsyncThunk('auth/login', async (data, { rejectWit
 export const registerUser = createAsyncThunk('auth/register', async (data, { rejectWithValue }) => {
   try {
     const res = await authAPI.register(data);
+    setUserToken(res.data?.token);
     return res.data.user;
   } catch (err) {
     return rejectWithValue(err.message);
@@ -29,7 +32,12 @@ export const registerUser = createAsyncThunk('auth/register', async (data, { rej
 });
 
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
-  await authAPI.logout();
+  clearUserToken();
+  try {
+    await authAPI.logout();
+  } catch {
+    /* session already invalid */
+  }
 });
 
 const authSlice = createSlice({

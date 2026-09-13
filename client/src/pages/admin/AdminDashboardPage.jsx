@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getOrders, getAdminProducts, getCustomers } from '../../utils/storage';
+import { adminAPI } from '../../services/api';
 import { formatINR } from '../../utils/format';
 
 const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -8,24 +8,22 @@ const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export default function AdminDashboardPage() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
-  const [customers, setCustomers] = useState([]);
+  const [stats, setStats] = useState({ totalOrders: 0, totalSales: 0, totalProducts: 0, totalCustomers: 0, lowStock: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setOrders(getOrders());
-    setProducts(getAdminProducts());
-    setCustomers(getCustomers());
+    Promise.allSettled([
+      adminAPI.getOrders({}),
+      adminAPI.getProducts(),
+      adminAPI.getDashboard(),
+    ]).then(([ordersRes, productsRes, dashRes]) => {
+      if (ordersRes.status === 'fulfilled') setOrders(ordersRes.value.data || []);
+      if (productsRes.status === 'fulfilled') setProducts(productsRes.value.data || []);
+      if (dashRes.status === 'fulfilled') setStats(dashRes.value.data || stats);
+      setLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const stats = useMemo(() => {
-    const revenue = orders.reduce((s, o) => s + Number(o.total || 0), 0);
-    const validCustomers = customers.filter((c) => (c.email || '').toLowerCase().includes('@'));
-    return {
-      revenue,
-      orders: orders.length,
-      products: products.length,
-      customers: validCustomers.length,
-    };
-  }, [orders, products, customers]);
 
   const weekly = useMemo(() => {
     const buckets = Array.from({ length: 7 }, (_, i) => {
@@ -35,7 +33,7 @@ export default function AdminDashboardPage() {
       return { label: DAY[d.getDay()], count: 0, date: d };
     });
     orders.forEach((o) => {
-      const od = new Date(o.date || o.createdAt).toDateString();
+      const od = new Date(o.createdAt).toDateString();
       const b = buckets.find((x) => x.date.toDateString() === od);
       if (b) b.count += 1;
     });
@@ -56,6 +54,10 @@ export default function AdminDashboardPage() {
 
   const recent = orders.slice(0, 5);
 
+  if (loading) {
+    return <div className="py-20 text-center text-muted">Loading dashboard…</div>;
+  }
+
   return (
     <div>
       <h1 className="font-display text-2xl font-bold text-primary">Dashboard</h1>
@@ -63,10 +65,10 @@ export default function AdminDashboardPage() {
 
       {/* Stat cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Revenue" value={formatINR(stats.revenue)} accent="bg-emerald-100 text-emerald-700" icon="₹" />
-        <StatCard label="Total Orders" value={stats.orders} accent="bg-sky-100 text-sky-700" icon="📦" />
-        <StatCard label="Products" value={stats.products} accent="bg-amber-100 text-amber-700" icon="🎁" />
-        <StatCard label="Customers" value={stats.customers} accent="bg-accent/10 text-accent" icon="👥" />
+        <StatCard label="Total Revenue" value={formatINR(stats.totalSales)} accent="bg-emerald-100 text-emerald-700" icon="₹" />
+        <StatCard label="Total Orders" value={stats.totalOrders} accent="bg-sky-100 text-sky-700" icon="📦" />
+        <StatCard label="Products" value={stats.totalProducts} accent="bg-amber-100 text-amber-700" icon="🎁" />
+        <StatCard label="Customers" value={stats.totalCustomers} accent="bg-accent/10 text-accent" icon="👥" />
       </div>
 
       {/* Charts */}
@@ -126,13 +128,13 @@ export default function AdminDashboardPage() {
               </thead>
               <tbody>
                 {recent.map((o) => (
-                  <tr key={o.orderId || o._id} className="border-b border-line/60">
-                    <td className="py-3 font-mono text-xs text-primary">{String(o.orderId || o._id).slice(0, 16)}</td>
-                    <td className="py-3 font-medium text-ink/80">{o.customer?.name || '—'}</td>
-                    <td className="py-3 text-ink/80">{(o.items || o.orderItems || []).length}</td>
-                    <td className="py-3 font-semibold text-primary">{formatINR(o.total || o.totalAmount)}</td>
-                    <td className="py-3"><StatusPill status={o.status || o.orderStatus || 'Processing'} /></td>
-                    <td className="py-3 text-muted">{new Date(o.date || o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
+                  <tr key={o._id} className="border-b border-line/60">
+                    <td className="py-3 font-mono text-xs text-primary">{String(o._id).slice(0, 16)}</td>
+                    <td className="py-3 font-medium text-ink/80">{o.shippingAddress?.fullName || o.user?.name || '—'}</td>
+                    <td className="py-3 text-ink/80">{(o.orderItems || []).length}</td>
+                    <td className="py-3 font-semibold text-primary">{formatINR(o.totalAmount)}</td>
+                    <td className="py-3"><StatusPill status={o.orderStatus || 'Pending'} /></td>
+                    <td className="py-3 text-muted">{new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -162,6 +164,9 @@ export function StatusPill({ status }) {
     Cancelled: 'bg-accent/10 text-accent',
     Confirmed: 'bg-indigo-100 text-indigo-700',
     Pending: 'bg-line text-ink/70',
+    'Out for Delivery': 'bg-violet-100 text-violet-700',
+    Returned: 'bg-orange-100 text-orange-700',
+    Refunded: 'bg-teal-100 text-teal-700',
   };
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${colors[status] || colors.Processing}`}>{status}</span>;
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${colors[status] || colors.Pending}`}>{status}</span>;
 }

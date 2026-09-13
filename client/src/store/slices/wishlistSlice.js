@@ -16,9 +16,16 @@ export const toggleWishlist = createAsyncThunk('wishlist/toggle', async (product
     if (exists) {
       await wishlistAPI.remove(productId);
       return { action: 'removed', productId };
-    } else {
+    }
+    try {
       const res = await wishlistAPI.add(productId);
       return { action: 'added', items: res.data };
+    } catch (err) {
+      if (err?.status === 409) {
+        const fresh = await wishlistAPI.get();
+        return { action: 'added', items: fresh.data };
+      }
+      throw err;
     }
   } catch (err) {
     return rejectWithValue(err.message);

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearError } from '../store/slices/authSlice';
 import { showNotification } from '../store/slices/notificationSlice';
-import { upsertCustomer } from '../utils/storage';
 import Button from '../components/ui/Button';
 import { Check } from 'lucide-react';
 
@@ -32,16 +31,12 @@ export default function RegisterPage() {
     return Object.keys(e).length === 0;
   };
 
-  const submit = async (e) => {
+const submit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
     const result = await dispatch(registerUser({ ...form, confirmPassword: undefined }));
     if (result.meta.requestStatus === 'fulfilled') {
-      upsertCustomer({
-        name: form.name.trim(), email: form.email.trim(), phone: form.mobile,
-        joined: new Date().toISOString().slice(0, 10), orders: 0, spent: 0,
-      });
-      dispatch(showNotification({ message: 'Account created! Welcome to GiftedThreads 🎉' }));
+      dispatch(showNotification({ message: 'Account created! Welcome to Mahfil Gifts 🎉' }));
       navigate('/account');
     }
   };
@@ -59,7 +54,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="card p-8">
           <div className="text-center">
-            <p className="font-display text-3xl font-bold text-primary">Join <span className="text-accent">GiftedThreads</span></p>
+            <p className="font-display text-3xl font-bold text-primary">Join <span className="text-accent">MahfilGifts</span></p>
             <p className="mt-1 text-sm text-muted">Create your account for a smoother gifting journey</p>
           </div>
 

@@ -6,19 +6,20 @@ import { updateCartItem, removeFromCart } from '../store/slices/cartSlice';
 import { showNotification } from '../store/slices/notificationSlice';
 import { formatINR } from '../utils/format';
 import { computeCartTotals } from '../utils/order';
-import { getSettings } from '../utils/storage';
 import Button from '../components/ui/Button';
 
 export default function CartPage() {
   const items = useSelector((s) => s.cart.items);
+  const cartTotals = useSelector((s) => s.cart.totals);
   const loading = useSelector((s) => s.cart.loading);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const settings = getSettings();
 
-  const totals = useMemo(() => computeCartTotals(items), [items]);
-  const freeThreshold = settings.freeShippingThreshold;
-  const progress = Math.min(100, Math.round((totals.subtotal / freeThreshold) * 100));
+  const totals = useMemo(() => cartTotals || computeCartTotals(items), [cartTotals, items]);
+  const freeThreshold = totals.freeShippingThreshold || (cartTotals ? 1999 : 999);
+  const progress = Math.min(100, Math.round((Number(totals.subtotal) / freeThreshold) * 100));
+  const totalItems = totals.totalItems || items.reduce((s, i) => s + i.quantity, 0);
+  const discountLabel = totals.discount > 0 ? `Buy ${totalItems >= 3 ? '3+' : '2+'} discount applied` : '';
 
   const updateQty = (item, delta) => {
     const next = Math.max(1, Math.min(10, item.quantity + delta));
@@ -56,7 +57,7 @@ export default function CartPage() {
     <div className="bg-light">
       <div className="mx-auto max-w-7xl px-4 py-10 md:px-6">
         <h1 className="font-display text-3xl font-bold text-primary">Your Bag</h1>
-        <p className="mt-1 text-sm text-muted">{totals.totalItems} {totals.totalItems === 1 ? 'item' : 'items'}</p>
+        <p className="mt-1 text-sm text-muted">{totalItems} {totalItems === 1 ? 'item' : 'items'}</p>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
           {/* Items */}
@@ -141,7 +142,7 @@ export default function CartPage() {
 
                 {totals.discount > 0 ? (
                   <div className="flex justify-between text-emerald-600">
-                    <span>{totals.discountLabel} ✅</span>
+                    <span>{discountLabel} ✅</span>
                     <span className="font-semibold">− {formatINR(totals.discount)}</span>
                   </div>
                 ) : (
@@ -152,7 +153,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between">
                   <span className="text-muted">Delivery</span>
-                  <span className="font-medium text-primary">{totals.delivery === 0 ? 'FREE' : formatINR(totals.delivery)}</span>
+                  <span className="font-medium text-primary">{Number(totals.shipping) === 0 ? 'FREE' : formatINR(totals.shipping)}</span>
                 </div>
 
                 <div className="flex justify-between border-t border-line pt-3 text-base font-bold text-primary">

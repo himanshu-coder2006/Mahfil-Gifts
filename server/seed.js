@@ -15,6 +15,14 @@ import Review from './models/Review.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
+const isProduction = process.env.NODE_ENV === 'production';
+const forceFlag = process.argv.includes('--force');
+
+if (isProduction && !forceFlag) {
+  console.error('Refusing to seed in production. Use --force to override.');
+  process.exit(1);
+}
+
 const LOCAL_MONGO = 'mongodb://127.0.0.1:27017/mahfilifts';
 const PRIMARY_MONGO = process.env.MONGO_URI || LOCAL_MONGO;
 
@@ -38,15 +46,15 @@ const seed = async () => {
 
   const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin@123', 10);
   const admin = await Admin.create({
-    name: 'Mahfilifts Admin',
-    email: process.env.ADMIN_EMAIL || 'admin@mahfilifts.com',
+    name: 'MahfilGifts Admin',
+    email: process.env.ADMIN_EMAIL || 'admin@mahfilgifts.com',
     password: adminPassword,
     role: 'super-admin',
   });
 
-  const customer = await User.create({
+  const customer = await User.findOne({ email: 'customer@mahfilgifts.com' }) || await User.create({
     name: 'Demo Customer',
-    email: 'customer@mahfilifts.com',
+    email: 'customer@mahfilgifts.com',
     mobile: '9999999999',
     password: await bcrypt.hash('Customer@123', 10),
     isVerified: true,
@@ -329,6 +337,7 @@ const seed = async () => {
   ];
 
   for (const p of products) {
+    p.brand = 'MahfilGifts';
     p.sku = `MF-${Math.floor(1000 + Math.random() * 9000)}`;
     p.lowStockThreshold = 5;
     p.status = true;
@@ -348,12 +357,6 @@ const seed = async () => {
     { name: 'Valentine\'s Day Gifts', slug: 'valentines-gift', description: 'Show love with a personal touch.' },
     { name: 'Wedding Gifts', slug: 'wedding-gifts', description: 'For the couple just starting their story.' },
     { name: 'Housewarming Gifts', slug: 'housewarming-gifts', description: 'Warm wishes for a brand-new home.' },
-  ]);
-
-  await Review.insertMany([
-    { product: productDocs[0]._id, user: customer._id, rating: 5, title: 'Elegant and perfect', comment: 'The print looks so classy and the name detail makes it feel extra special.' },
-    { product: productDocs[2]._id, user: customer._id, rating: 5, title: 'Compact and classy', comment: 'Beautifully stitched, sturdy, and perfect for keeping essentials organised.' },
-    { product: productDocs[10]._id, user: customer._id, rating: 5, title: 'Print quality is sharp', comment: 'The photo came out crystal clear on the mug. Loved it.' },
   ]);
 
   await Coupon.create({

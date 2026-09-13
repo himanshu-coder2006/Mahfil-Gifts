@@ -8,9 +8,15 @@ export const notFoundHandler = (req, res) => {
 
 export const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
+  const payload = {
     success: false,
     message: err.message || 'Something went wrong',
     errors: err.errors || [],
-  });
+  };
+
+  if (process.env.NODE_ENV !== 'production') {
+    payload.stack = err.stack;
+  }
+
+  res.status(statusCode).json(payload);
 };

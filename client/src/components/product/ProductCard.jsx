@@ -22,12 +22,12 @@ export default function ProductCard({ product: p }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((s) => s.auth.user);
-  const wishlistIds = useSelector((s) => s.wishlist.items.map((w) => w._id));
+  const wishlistItems = useSelector((s) => s.wishlist.items);
   const loading = useSelector((s) => s.cart.loading);
   const [adding, setAdding] = useState(false);
 
   const off = percentOff(p.price, p.originalPrice);
-  const wished = wishlistIds.includes(p._id);
+  const wished = wishlistItems.some((item) => item._id === p._id);
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -67,10 +67,19 @@ export default function ProductCard({ product: p }) {
 
   return (
     <div className="group relative">
-      <div className="relative overflow-hidden rounded-2xl bg-card shadow-sm">
+      <div className="relative overflow-hidden rounded-xl bg-card shadow-sm ring-1 ring-line/70">
         <Link to={`/product/${p.slug}`}>
           <div className="aspect-square w-full overflow-hidden">
-            <img src={productImage(p)} alt={p.name} loading="lazy" className="img-zoom h-full w-full object-cover" />
+            <img
+              src={productImage(p)}
+              alt={p.name}
+              loading="lazy"
+              className="img-zoom h-full w-full object-cover"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = productImage({});
+              }}
+            />
           </div>
         </Link>
 

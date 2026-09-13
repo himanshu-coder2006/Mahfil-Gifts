@@ -1,13 +1,13 @@
 import express from 'express';
 import NewsletterSubscriber from '../models/NewsletterSubscriber.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import { subscribeValidator } from '../validators/newsletter.js';
 
 const router = express.Router();
 
-router.post('/subscribe', async (req, res) => {
+router.post('/subscribe', subscribeValidator, async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return errorResponse(res, 400, 'Email is required.', []);
 
     const subscriber = await NewsletterSubscriber.findOneAndUpdate(
       { email },

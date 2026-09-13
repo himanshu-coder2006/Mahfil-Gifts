@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingBag, Users, Settings as SettingsIcon, LogOut } from 'lucide-react';
-import { getAdminSession, clearAdminSession } from '../../utils/storage';
+import { getAdminSession, clearAdminSession, clearAdminToken } from '../../utils/storage';
+import { adminAPI } from '../../services/api';
 
 const LINKS = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -22,20 +23,22 @@ export default function AdminLayout() {
   if (!admin) return null;
 
   const logout = () => {
+    clearAdminToken();
     clearAdminSession();
+    adminAPI.logout().catch(() => {});
     navigate('/admin/login', { replace: true });
   };
 
   return (
     <div className="flex min-h-screen bg-light">
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-primary text-white">
-        <div className="flex items-center gap-2 px-6 py-6">
-          <span className="font-display text-lg font-bold">
-            Gifted<span className="text-accent">Threads</span>
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-white/10 bg-primary text-white">
+        <div className="flex items-center gap-2 px-6 py-7">
+          <span className="font-display text-xl font-bold tracking-[-0.03em]">
+            Mahfil<span className="text-accent">Gifts</span>
           </span>
         </div>
-        <p className="px-6 text-[10px] font-semibold tracking-[0.25em] text-white/40 uppercase">Admin Panel</p>
+        <p className="px-6 text-[10px] font-semibold tracking-[0.25em] text-accent uppercase">Admin Panel</p>
 
         <nav className="mt-4 flex-1 space-y-1 px-4">
           {LINKS.map((l) => (
@@ -57,7 +60,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main */}
-      <main className="ml-60 min-w-0 flex-1 p-8">
+      <main className="ml-64 min-w-0 flex-1 bg-light p-6 md:p-8">
         <Outlet />
       </main>
     </div>

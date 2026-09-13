@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" role="img" aria-labelledby="title desc">
+  <title id="title">Mahfil Gifts teddy mascot logo</title>
+  <desc id="desc">A friendly orange teddy bear with a brown bow tie above the Mahfil Gifts wordmark</desc>
+
+  <defs>
+    <radialGradient id="fur" cx="50%" cy="34%" r="68%">
+      <stop offset="0%" stop-color="#FFC979"/>
+      <stop offset="55%" stop-color="#F9A448"/>
+      <stop offset="100%" stop-color="#EF8B33"/>
+    </radialGradient>
+    <radialGradient id="cream" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#FFFDF7"/>
+      <stop offset="100%" stop-color="#FFEFD2"/>
+    </radialGradient>
+    <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFE9C4"/>
+      <stop offset="100%" stop-color="#F7C98B"/>
+    </linearGradient>
+    <linearGradient id="bowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#B85F3E"/>
+      <stop offset="100%" stop-color="#8A4522"/>
+    </linearGradient>
+  </defs>
+
+  <!-- soft ground shadow -->
+  <ellipse cx="120" cy="163" rx="60" ry="7" fill="#5B3527" opacity="0.07"/>
+
+  <!-- ears (behind head) -->
+  <circle cx="82" cy="40" r="26" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+  <circle cx="158" cy="40" r="26" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+  <circle cx="82" cy="42" r="11.5" fill="#FFF1D8"/>
+  <circle cx="158" cy="42" r="11.5" fill="#FFF1D8"/>
+
+  <!-- arms -->
+  <circle cx="64" cy="133" r="17" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+  <circle cx="176" cy="133" r="17" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+
+  <!-- torso -->
+  <ellipse cx="120" cy="140" rx="48" ry="26" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+  <ellipse cx="120" cy="147" rx="27" ry="18" fill="url(#belly)" stroke="#E9C08C" stroke-width="2"/>
+
+  <!-- feet -->
+  <ellipse cx="100" cy="150" rx="17" ry="11" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+  <ellipse cx="140" cy="150" rx="17" ry="11" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+  <ellipse cx="100" cy="152" rx="9.5" ry="6.5" fill="#FFF1D8" stroke="#E9C08C" stroke-width="1.5"/>
+  <ellipse cx="140" cy="152" rx="9.5" ry="6.5" fill="#FFF1D8" stroke="#E9C08C" stroke-width="1.5"/>
+
+  <!-- head -->
+  <circle cx="120" cy="76" r="52" fill="url(#fur)" stroke="#5B3527" stroke-width="4.5"/>
+
+  <!-- eyes -->
+  <circle cx="98" cy="77" r="6.3" fill="#3A2A22"/>
+  <circle cx="142" cy="77" r="6.3" fill="#3A2A22"/>
+  <circle cx="99.7" cy="74.8" r="2.1" fill="#FFFFFF"/>
+  <circle cx="140.3" cy="74.8" r="2.1" fill="#FFFFFF"/>
+
+  <!-- muzzle -->
+  <ellipse cx="120" cy="95" rx="26" ry="19.5" fill="url(#cream)" stroke="#E8BE86" stroke-width="1.5"/>
+
+  <!-- nose -->
+  <ellipse cx="120" cy="88" rx="8" ry="6" fill="#3A2A22"/>
+  <ellipse cx="118.5" cy="86.4" rx="2.5" ry="1.8" fill="#FFFFFF" opacity="0.85"/>
+
+  <!-- smile -->
+  <path d="M120 94 L120 97 M109 101 Q120 111 131 101" fill="none" stroke="#3A2A22" stroke-width="3.4" stroke-linecap="round"/>
+
+  <!-- blush cheeks -->
+  <circle cx="92" cy="92" r="8.5" fill="#F6A876" opacity="0.45"/>
+  <circle cx="148" cy="92" r="8.5" fill="#F6A876" opacity="0.45"/>
+
+  <!-- bow tie -->
+  <ellipse cx="95" cy="135" rx="16" ry="11" fill="url(#bowGrad)" stroke="#5B3527" stroke-width="2.5" transform="rotate(-16 95 135)"/>
+  <ellipse cx="145" cy="135" rx="16" ry="11" fill="url(#bowGrad)" stroke="#5B3527" stroke-width="2.5" transform="rotate(16 145 135)"/>
+  <circle cx="120" cy="135" r="11.5" fill="url(#bowGrad)" stroke="#5B3527" stroke-width="2.5"/>
+  <circle cx="117" cy="132" r="3.2" fill="#FFFFFF" opacity="0.28"/>
+
+  <!-- sparkles -->
+  <path d="M44 44 L47.5 51.5 L55 55 L47.5 58.5 L44 66 L40.5 58.5 L33 55 L40.5 51.5 Z" fill="#C97F33" opacity="0.5"/>
+  <path d="M196 41 L199.5 48.5 L207 52 L199.5 55.5 L196 63 L192.5 55.5 L185 52 L192.5 48.5 Z" fill="#C97F33" opacity="0.5"/>
+
+  <!-- wordmark -->
+  <text x="120" y="188" text-anchor="middle" textLength="198" lengthAdjust="spacingAndGlyphs" font-family="'Arial Rounded MT Bold','Baloo 2','Quicksand','Trebuchet MS','Verdana',sans-serif" font-size="29" font-weight="700" letter-spacing="0">
+    <tspan fill="#5B3527">Mahfil </tspan><tspan fill="#B85F48">Gifts</tspan>
+  </text>
+</svg>

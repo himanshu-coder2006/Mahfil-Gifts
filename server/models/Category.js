@@ -10,6 +10,5 @@ const categorySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 categorySchema.index({ name: 1 });
-categorySchema.index({ slug: 1 });
 
 export default mongoose.model('Category', categorySchema);

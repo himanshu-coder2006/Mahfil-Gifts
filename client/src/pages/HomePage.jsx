@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { productAPI, categoryAPI } from '../services/api';
 import HeroBanner from '../components/home/HeroBanner';
-import CategoryGrid from '../components/home/CategoryGrid';
-import BestsellerSection from '../components/home/BestsellerSection';
-import BudgetBuys from '../components/home/BudgetBuys';
 import TrustBadges from '../components/home/TrustBadges';
+import CategoryGrid from '../components/home/CategoryGrid';
+import BudgetBuys from '../components/home/BudgetBuys';
 import Testimonials from '../components/home/Testimonials';
 import NewsletterSection from '../components/home/NewsletterSection';
+import HomeCatalog from '../components/home/HomeCatalog';
 import Loader from '../components/Loader';
 
 export default function HomePage() {
@@ -34,10 +34,10 @@ export default function HomePage() {
   return (
     <>
       <HeroBanner heroProduct={heroProduct} />
-      <CategoryGrid categories={categories} />
-      <BestsellerSection products={products} />
-      <BudgetBuys />
       <TrustBadges />
+      <CategoryGrid categories={categories} />
+      <HomeCatalog products={products} categories={categories} />
+      <BudgetBuys />
       <Testimonials />
       <NewsletterSection />
     </>

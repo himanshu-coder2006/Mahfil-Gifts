@@ -2,6 +2,7 @@ import express from 'express';
 import Product from '../models/Product.js';
 import Category from '../models/Category.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import escapeRegex from '../utils/escapeRegex.js';
 
 const router = express.Router();
 
@@ -26,11 +27,12 @@ router.get('/', async (req, res) => {
 
     const conditions = { ...filters };
     if (search) {
+      const safeSearch = escapeRegex(search);
       conditions.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } },
-        { sku: { $regex: search, $options: 'i' } },
-        { tags: { $in: [new RegExp(search, 'i')] } },
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { brand: { $regex: safeSearch, $options: 'i' } },
+        { sku: { $regex: safeSearch, $options: 'i' } },
+        { tags: { $in: [new RegExp(safeSearch, 'i')] } },
       ];
     }
 

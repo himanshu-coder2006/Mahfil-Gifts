@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { orderAPI } from '../services/api';
-import { getOrders, getSettings } from '../utils/storage';
 import { formatINR } from '../utils/format';
-import { computeCartTotals } from '../utils/order';
 import Button from '../components/ui/Button';
 
 const CONFETTI_COLORS = ['#E94560', '#1A1A2E', '#C9A227', '#2E7D72', '#F8C8D4', '#8B5CF6'];
@@ -30,44 +28,37 @@ function Confetti() {
   );
 }
 
+const convertServerOrder = (o) => {
+  if (!o) return null;
+  const items = (o.orderItems || []).map((i) => ({ name: i.name, quantity: i.quantity, price: i.price, personalised: i.variant?.personalisation || '' }));
+  return {
+    orderId: o._id,
+    date: o.createdAt,
+    customer: { name: o.shippingAddress?.fullName, email: o.shippingAddress?.email, phone: o.shippingAddress?.phone },
+    items,
+    address: o.shippingAddress,
+    paymentMethod: o.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment (Razorpay)',
+    subtotal: o.subtotal,
+    discount: o.discount,
+    delivery: o.shippingCharge,
+    total: o.totalAmount,
+    codFee: Number(o.totalAmount) - (Number(o.subtotal) - Number(o.discount) + Number(o.shippingCharge)),
+    status: o.orderStatus || 'Pending',
+  };
+};
+
 export default function OrderSuccessPage() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const mirror = getOrders().find((o) => o.orderId === id);
-    setOrder(mirror || null);
     orderAPI
       .getOne(id)
-      .then((res) => {
-        // Prefer the local mirror (has accurate discounts); fall back to server data.
-        setOrder((prev) => prev || convertServerOrder(res.data));
-      })
-      .catch(() => {
-        if (!mirror) {
-          // Fall back to computing from server-independent data if nothing found.
-          setOrder(null);
-        }
-      })
+      .then((res) => setOrder(convertServerOrder(res.data)))
+      .catch(() => setOrder(null))
       .finally(() => setLoading(false));
   }, [id]);
-
-  const convertServerOrder = (o) => {
-    if (!o) return null;
-    const items = (o.orderItems || []).map((i) => ({ name: i.name, quantity: i.quantity, price: i.price, personalised: i.variant?.personalisation || '' }));
-    const t = computeCartTotals(items.map((i) => ({ product: { price: i.price }, quantity: i.quantity })));
-    return {
-      orderId: o._id,
-      date: o.createdAt,
-      customer: { name: o.shippingAddress?.fullName, email: '', phone: o.shippingAddress?.phone },
-      items,
-      address: o.shippingAddress,
-      paymentMethod: o.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment',
-      subtotal: o.subtotal, discount: o.discount, delivery: o.shippingCharge, total: o.totalAmount,
-      status: o.orderStatus || 'Processing',
-    };
-  };
 
   if (loading) {
     return <div className="mx-auto max-w-3xl px-4 py-24 text-center text-muted">Loading your order…</div>;
@@ -123,7 +114,10 @@ export default function OrderSuccessPage() {
               <div className="flex justify-between text-emerald-600"><span>Discount</span><span>− {formatINR(order.discount)}</span></div>
             )}
             <div className="flex justify-between"><span className="text-muted">Delivery</span><span>{order.delivery === 0 ? 'FREE' : formatINR(order.delivery)}</span></div>
-            <div className="flex justify-between border-t border-line pt-2 text-base font-bold text-primary"><span>Total Paid</span><span>{formatINR(order.total)}</span></div>
+            {order.codFee > 0 && (
+              <div className="flex justify-between"><span className="text-muted">COD charge</span><span>{formatINR(order.codFee)}</span></div>
+            )}
+            <div className="flex justify-between border-t border-line pt-2 text-base font-bold text-primary"><span>Total</span><span>{formatINR(order.total)}</span></div>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-x-8 gap-y-2 border-t border-line pt-4 text-sm">
@@ -142,7 +136,7 @@ export default function OrderSuccessPage() {
             </div>
             <div>
               <p className="text-xs text-muted">Status</p>
-              <p className="mt-1 text-emerald-600">{order.status || 'Processing'}</p>
+              <p className="mt-1 text-emerald-600">{order.status}</p>
             </div>
           </div>
         </div>

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { productAPI } from '../../services/api';
-import { getAdminProducts, saveAdminProducts } from '../../utils/storage';
+import { adminAPI } from '../../services/api';
 import { showNotification } from '../../store/slices/notificationSlice';
 import { formatINR, productImage, percentOff } from '../../utils/format';
 import Modal from '../../components/ui/Modal';
@@ -32,41 +31,15 @@ export default function AdminProductsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(blankForm);
   const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const local = getAdminProducts();
-    if (local.length > 0) {
-      setProducts(local);
-      setLoading(false);
-    } else {
-      productAPI
-        .getAll({})
-        .then((res) => {
-          const mapped = (res.data || []).map((p) => ({
-            _id: p._id,
-            name: p.name,
-            slug: p.slug,
-            category: { slug: p.category?.slug, name: p.category?.name },
-            price: p.price,
-            originalPrice: p.originalPrice,
-            thumbnail: p.thumbnail || p.images?.[0],
-            stock: p.stock,
-            description: p.description,
-            status: true,
-            tags: p.tags || [],
-          }));
-          saveAdminProducts(mapped);
-          setProducts(mapped);
-        })
-        .catch(() => setProducts([]))
-        .finally(() => setLoading(false));
-    }
+    adminAPI
+      .getProducts()
+      .then((res) => setProducts(res.data || []))
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
   }, []);
-
-  const persist = (next) => {
-    saveAdminProducts(next);
-    setProducts(next);
-  };
 
   const openAdd = () => {
     setEditing(null);
@@ -78,39 +51,54 @@ export default function AdminProductsPage() {
     setEditing(p);
     setForm({
       name: p.name, slug: p.slug, category: p.category?.slug || p.category || '', price: p.price,
-      originalPrice: p.originalPrice, description: p.description || '', stock: p.stock ?? 0, status: p.status ?? true,
+      originalPrice: p.originalPrice || '', description: p.description || '', stock: p.stock ?? 0, status: p.status ?? true,
     });
     setModalOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim() || !form.price) {
       dispatch(showNotification({ message: 'Name and price are required.', type: 'error' }));
       return;
     }
+    setSaving(true);
     const payload = {
-      _id: editing?._id || 'local-' + Date.now(),
       name: form.name.trim(),
-      slug: (form.slug || form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace(/^-+|-+$/g, ''),
-      category: { slug: form.category, name: CATEGORY_OPTIONS.find((c) => c.slug === form.category)?.name },
+      slug: form.slug.trim() || undefined,
+      category: form.category,
       price: Number(form.price),
       originalPrice: Number(form.originalPrice) || 0,
-      thumbnail: editing?.thumbnail || productImage({}),
-      stock: Number(form.stock),
+      stock: Number(form.stock) || 0,
       description: form.description,
       status: form.status,
-      tags: editing?.tags || [],
     };
-    const next = editing ? products.map((p) => (p._id === editing._id ? payload : p)) : [payload, ...products];
-    persist(next);
-    setModalOpen(false);
-    dispatch(showNotification({ message: editing ? 'Product updated successfully.' : 'Product added successfully.' }));
+    try {
+      if (editing?._id) {
+        const res = await adminAPI.updateProduct(editing._id, payload);
+        setProducts((prev) => prev.map((p) => (p._id === editing._id ? res.data : p)));
+        dispatch(showNotification({ message: 'Product updated successfully.' }));
+      } else {
+        const res = await adminAPI.createProduct(payload);
+        setProducts((prev) => [res.data, ...prev]);
+        dispatch(showNotification({ message: 'Product added successfully.' }));
+      }
+      setModalOpen(false);
+    } catch (err) {
+      dispatch(showNotification({ message: err?.message || 'Could not save product.', type: 'error' }));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const confirmDelete = (p) => {
+  const confirmDelete = async (p) => {
     if (!window.confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
-    persist(products.filter((x) => x._id !== p._id));
-    dispatch(showNotification({ message: 'Product deleted.' }));
+    try {
+      await adminAPI.deleteProduct(p._id);
+      setProducts((prev) => prev.filter((x) => x._id !== p._id));
+      dispatch(showNotification({ message: 'Product deleted.' }));
+    } catch (err) {
+      dispatch(showNotification({ message: err?.message || 'Could not delete product.', type: 'error' }));
+    }
   };
 
   const filtered = products.filter((p) => (p.name || '').toLowerCase().includes(search.toLowerCase()));
@@ -157,7 +145,7 @@ export default function AdminProductsPage() {
                     <tr key={p._id} className="border-b border-line/60">
                       <td className="py-3">
                         <div className="flex items-center gap-3">
-                          <img src={p.thumbnail || productImage(p)} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                          <img src={p.thumbnail || p.images?.[0] || productImage(p)} alt="" className="h-11 w-11 rounded-lg object-cover" />
                           <div>
                             <p className="max-w-xs truncate font-medium text-primary">{p.name}</p>
                             {off > 0 && <p className="text-xs text-accent">{off}% off</p>}
@@ -235,7 +223,7 @@ export default function AdminProductsPage() {
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => setModalOpen(false)}>Cancel</Button>
-          <Button variant="accent" onClick={save}>Save Product</Button>
+          <Button variant="accent" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save Product'}</Button>
         </div>
       </Modal>
     </div>

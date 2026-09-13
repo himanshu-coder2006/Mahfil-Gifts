@@ -3,10 +3,11 @@ import Review from '../models/Review.js';
 import Product from '../models/Product.js';
 import { authenticateUser } from '../middleware/authMiddleware.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import { getReviewsValidator, createReviewValidator } from '../validators/review.js';
 
 const router = express.Router();
 
-router.get('/product/:productId', async (req, res) => {
+router.get('/product/:productId', getReviewsValidator, async (req, res) => {
   try {
     const reviews = await Review.find({ product: req.params.productId, status: 'approved' }).populate('user', 'name');
     return successResponse(res, 200, 'Reviews fetched successfully.', reviews);
@@ -15,7 +16,7 @@ router.get('/product/:productId', async (req, res) => {
   }
 });
 
-router.post('/product/:productId', authenticateUser, async (req, res) => {
+router.post('/product/:productId', authenticateUser, createReviewValidator, async (req, res) => {
   try {
     const { rating, title, comment } = req.body;
     const product = await Product.findById(req.params.productId);

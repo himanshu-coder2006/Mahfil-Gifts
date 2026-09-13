@@ -8,10 +8,16 @@ const router = express.Router();
 
 router.use(authenticateUser);
 
+const getWishlist = async (user) => {
+  await User.populate(user, { path: 'wishlist', match: { status: true } });
+  return user.wishlist || [];
+};
+
 router.get('/', async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('wishlist');
-    return successResponse(res, 200, 'Wishlist fetched.', user.wishlist || []);
+    const user = await User.findById(req.user._id);
+    const wishlist = await getWishlist(user);
+    return successResponse(res, 200, 'Wishlist fetched.', wishlist);
   } catch (error) {
     return errorResponse(res, 500, 'Unable to fetch wishlist.', [error.message]);
   }
@@ -22,17 +28,19 @@ router.post('/', async (req, res) => {
     const { productId } = req.body;
     if (!productId) return errorResponse(res, 400, 'Product ID is required.', []);
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).select('_id');
     if (!product) return errorResponse(res, 404, 'Product not found.', []);
 
     const user = await User.findById(req.user._id);
-    if (user.wishlist.includes(productId)) {
+    if (user.wishlist.some((id) => id.toString() === productId)) {
       return errorResponse(res, 409, 'Product is already in wishlist.', []);
     }
 
     user.wishlist.push(productId);
     await user.save();
-    return successResponse(res, 201, 'Product added to wishlist.', user.wishlist);
+
+    const wishlist = await getWishlist(user);
+    return successResponse(res, 201, 'Product added to wishlist.', wishlist);
   } catch (error) {
     return errorResponse(res, 500, 'Unable to add product to wishlist.', [error.message]);
   }
@@ -43,7 +51,9 @@ router.delete('/:productId', async (req, res) => {
     const user = await User.findById(req.user._id);
     user.wishlist = user.wishlist.filter((id) => id.toString() !== req.params.productId);
     await user.save();
-    return successResponse(res, 200, 'Product removed from wishlist.', user.wishlist);
+
+    const wishlist = await getWishlist(user);
+    return successResponse(res, 200, 'Product removed from wishlist.', wishlist);
   } catch (error) {
     return errorResponse(res, 500, 'Unable to remove product from wishlist.', [error.message]);
   }

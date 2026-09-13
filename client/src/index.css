@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #1a1a2e;
-  --color-primary-light: #2d2d44;
-  --color-accent: #e94560;
-  --color-accent-dark: #cf2f4a;
-  --color-light: #f8f7f4;
+  --color-primary: #18231f;
+  --color-primary-light: #2d4038;
+  --color-accent: #b85f48;
+  --color-accent-dark: #934936;
+  --color-light: #f4f1eb;
   --color-card: #ffffff;
-  --color-ink: #2d2d2d;
-  --color-muted: #6b6b76;
-  --color-line: #e9e4dc;
-  --color-gold: #c9a227;
+  --color-ink: #29312d;
+  --color-muted: #6c746f;
+  --color-line: #dedbd2;
+  --color-gold: #b58a45;
 
   --font-display: "Playfair Display", serif;
   --font-body: "DM Sans", sans-serif;
@@ -25,6 +25,11 @@ body {
   color: var(--color-ink);
   background: var(--color-light);
   -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: white;
 }
 
 h1, h2, h3, h4, .font-display {
@@ -75,7 +80,7 @@ h1, h2, h3, h4, .font-display {
 
 /* ---------- Cards ---------- */
 .card {
-  @apply rounded-2xl bg-white shadow-sm;
+  @apply rounded-xl bg-white shadow-sm;
 }
 
 /* ---------- Keyframes ---------- */
@@ -125,7 +130,7 @@ h1, h2, h3, h4, .font-display {
 
 /* slow animated gradient background for hero */
 .hero-gradient {
-  background: linear-gradient(120deg, #f8f7f4, #fdeee9, #efe9f5, #f8f7f4);
+  background: linear-gradient(120deg, #f4f1eb, #f1e7dc, #e7eee8, #f4f1eb);
   background-size: 300% 300%;
   animation: heroShift 14s ease infinite;
 }
@@ -133,6 +138,42 @@ h1, h2, h3, h4, .font-display {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+@keyframes announcementMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.announcement-marquee {
+  animation: announcementMarquee 24s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-marquee { animation: none; }
+}
+
+@keyframes heroTeddyFloat {
+  0%, 100% { transform: translate3d(0, 8px, 0) rotateX(0deg) rotateY(-3deg) rotateZ(-1deg) scale(0.98); }
+  50% { transform: translate3d(0, -14px, 0) rotateX(2deg) rotateY(3deg) rotateZ(1deg) scale(1.02); }
+}
+
+.hero-teddy {
+  animation: heroTeddyFloat 5.5s ease-in-out infinite;
+  transform-origin: 50% 60%;
+  will-change: transform;
+}
+.hero-stage { perspective: 1000px; }
+.hero-glow { animation: heroGlow 5.5s ease-in-out infinite; }
+
+@keyframes heroGlow {
+  0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.92); }
+  50% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-teddy, .hero-glow { animation: none; }
 }
 
 /* stagger grid children */

@@ -5,7 +5,6 @@ import { Package, User, MapPin, LogOut, Heart } from 'lucide-react';
 import { orderAPI } from '../services/api';
 import { logoutUser } from '../store/slices/authSlice';
 import { showNotification } from '../store/slices/notificationSlice';
-import { getOrders } from '../utils/storage';
 import { formatINR } from '../utils/format';
 import Button from '../components/ui/Button';
 
@@ -31,7 +30,7 @@ export default function AccountPage() {
   useEffect(() => {
     orderAPI.getAll()
       .then((res) => setOrders(res.data || []))
-      .catch(() => setOrders(getOrders()));
+      .catch(() => setOrders([]));
     setAddresses(JSON.parse(localStorage.getItem('gt_addresses') || '[]').filter((a) => !a.email || a.email === user?.email));
   }, [user]);
 
@@ -48,7 +47,6 @@ export default function AccountPage() {
     navigate('/');
   };
 
-  const localOrders = getOrders().filter((o) => !o || o.customer?.email === user?.email || !o.orderId);
   const canFollowStatus = orders.length > 0 && user;
 
   const STATUS_TABS = ['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
@@ -186,7 +184,7 @@ export default function AccountPage() {
                 <Button variant="accent" className="mt-6" onClick={saveProfile}>
                   {profileSaved ? 'Saved ✓' : 'Save Changes'}
                 </Button>
-                <p className="mt-3 text-xs text-muted">Profile data is saved locally in this demo.</p>
+                <p className="mt-3 text-xs text-muted">Profile details are synced from your account.</p>
               </div>
             )}
 

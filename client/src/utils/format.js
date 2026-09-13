@@ -8,7 +8,7 @@ export const percentOff = (price, originalPrice) => {
 
 export const productPrice = (p) => Number(p?.price || 0);
 export const productOriginal = (p) => Number(p?.originalPrice || 0);
-export const productImage = (p) => p?.thumbnail || p?.images?.[0] || 'https://placehold.co/500x500/f8f0e8/1a1a2e?text=GiftedThreads';
+export const productImage = (p) => p?.thumbnail || p?.images?.[0] || 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=900&q=85';
 export const productImages = (p) =>
   (p?.images && p.images.length ? p.images : [productImage(p)]);
 
